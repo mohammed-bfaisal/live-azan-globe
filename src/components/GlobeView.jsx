@@ -9,6 +9,7 @@ const COUNTRIES_URL = 'https://raw.githubusercontent.com/vasturiano/globe.gl/mas
 export default function GlobeView({ points = [], hoveredCity = null, onCityHover, onCityClick }) {
   const globeRef     = useRef()
   const [isRotating, setIsRotating]   = useState(true)
+  const [altitude, setAltitude]         = useState(2.2)
   const [countries,  setCountries]    = useState([])
   const [dimensions, setDimensions]   = useState({
     width:  window.innerWidth,
@@ -41,6 +42,11 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
     controls.maxDistance     = 2000
     globeRef.current.pointOfView({ lat: 20, lng: 40, altitude: 2.2 }, 0)
 
+    const trackAlt = () => {
+      const pov = globeRef.current.pointOfView()
+      setAltitude(pov.altitude)
+    }
+    controls.addEventListener('change', trackAlt)
     const canvas = globeRef.current.renderer().domElement
     const stop = () => { controls.autoRotate = false; setIsRotating(false) }
     canvas.addEventListener('pointerdown', stop)
@@ -48,6 +54,7 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
     return () => {
       canvas.removeEventListener('pointerdown', stop)
       canvas.removeEventListener('wheel', stop)
+      controls.removeEventListener('change', trackAlt)
     }
   }, [])
 
@@ -108,7 +115,7 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
         pointLng={d => d.lon}
         pointColor={d => d.color}
         pointAltitude={d => d.active ? 0.02 : 0.003}
-        pointRadius={d => d.active ? 0.45 : 0.15}
+        pointRadius={d => d.active ? Math.max(0.08, 0.45 * (altitude / 2.2)) : Math.max(0.04, 0.15 * (altitude / 2.2))}
         pointResolution={10}
         pointsMerge={false}
         onPointHover={onCityHover}
@@ -119,7 +126,7 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
         ringLat={d => d.lat}
         ringLng={d => d.lon}
         ringColor={d => t => d.color + Math.round((1 - t) * 255).toString(16).padStart(2, '0')}
-        ringMaxRadius={3.5}
+        ringMaxRadius={Math.max(0.8, 3.5 * (altitude / 2.2))}
         ringPropagationSpeed={1.5}
         ringRepeatPeriod={800}
         ringAltitude={0.001}
