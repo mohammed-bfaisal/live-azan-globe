@@ -10,6 +10,9 @@ import { usePrayerTimes } from './hooks/usePrayerTimes'
 // TODO: Prayer zone texture overlay — needs rework. Set to true when ready to fix.
 const ZONES_ENABLED = false
 
+// TODO: Prayer zone toggle sidebar — re-enable when ZONES_ENABLED is true.
+const SIDEBAR_ENABLED = false
+
 const ALL_PRAYERS     = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
 const DEFAULT_VISIBLE = Object.fromEntries(ALL_PRAYERS.map(p => [p, true]))
 
@@ -43,7 +46,7 @@ export default function App() {
         onCityClick={(city) => city && setTooltip(prev => ({ ...prev, city }))}
       />
       <Header />
-      <PrayerToggle visible={visibleZones} counts={counts} onToggle={handleToggle} />
+      {SIDEBAR_ENABLED && <PrayerToggle visible={visibleZones} counts={counts} onToggle={handleToggle} />}
       <Legend counts={counts} />
       <CityTooltip city={tooltip.city} x={tooltip.x} y={tooltip.y} />
       <div
