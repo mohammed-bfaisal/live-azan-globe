@@ -1,9 +1,65 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import Globe from 'react-globe.gl'
+import * as THREE from 'three'
 import { PRAYER_COLORS } from '../hooks/usePrayerTimes'
 
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png'
+
+// Convert lon range to Three.js wedge mesh sitting on sphere surface
+function makeZoneMesh(lonStart, lonEnd, color) {
+  const R = 100 // globe radius in three-globe units
+  const ALTITUDE = 0.005
+
+  const startRad = (lonStart * Math.PI) / 180
+  const endRad   = (lonEnd   * Math.PI) / 180
+  const midRad   = (startRad + endRad) / 2
+  const spanRad  = Math.abs(endRad - startRad)
+
+  // Use a thin box geometry scaled to cover the longitude band
+  const segments = Math.max(2, Math.round(spanRad * 20))
+  const geometry = new THREE.BufferGeometry()
+
+  const vertices = []
+  const indices  = []
+
+  // Build a quad strip along the sphere surface for this lon band
+  const LAT_STEPS = 36
+  for (let i = 0; i <= segments; i++) {
+    const lon = startRad + (i / segments) * (endRad - startRad)
+    for (let j = 0; j <= LAT_STEPS; j++) {
+      const lat = -Math.PI / 2 + (j / LAT_STEPS) * Math.PI
+      const r = R * (1 + ALTITUDE)
+      const x = r * Math.cos(lat) * Math.sin(lon)
+      const y = r * Math.sin(lat)
+      const z = r * Math.cos(lat) * Math.cos(lon)
+      vertices.push(x, y, z)
+    }
+  }
+
+  for (let i = 0; i < segments; i++) {
+    for (let j = 0; j < LAT_STEPS; j++) {
+      const a = i * (LAT_STEPS + 1) + j
+      const b = a + LAT_STEPS + 1
+      indices.push(a, b, a + 1)
+      indices.push(b, b + 1, a + 1)
+    }
+  }
+
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals()
+
+  const mat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(color),
+    transparent: true,
+    opacity: 0.18,
+    side: THREE.FrontSide,
+    depthWrite: false,
+  })
+
+  return new THREE.Mesh(geometry, mat)
+}
 
 export default function GlobeView({ points = [], zones = {}, visibleZones = {}, onCityHover, onCityClick }) {
   const globeRef = useRef()
@@ -41,17 +97,25 @@ export default function GlobeView({ points = [], zones = {}, visibleZones = {}, 
     }
   }, [])
 
+  // Build custom Three.js zone meshes
+  const zoneObjects = useMemo(() => {
+    const group = new THREE.Group()
+    Object.entries(zones).forEach(([prayer, ranges]) => {
+      if (!visibleZones[prayer]) return
+      const color = PRAYER_COLORS[prayer]
+      ranges.forEach(({ lonStart, lonEnd }) => {
+        group.add(makeZoneMesh(lonStart, lonEnd, color))
+      })
+    })
+    return group
+  }, [zones, visibleZones])
+
   const toggleRotate = () => {
     if (!globeRef.current) return
     const newVal = !isRotating
     globeRef.current.controls().autoRotate = newVal
     setIsRotating(newVal)
   }
-
-  // Flatten visible zone polygons into one array for globe
-  const polygons = Object.entries(zones).flatMap(([prayer, features]) =>
-    visibleZones[prayer] ? features.map(f => ({ ...f, prayer })) : []
-  )
 
   const activePoints = points.filter(p => p.active)
 
@@ -71,13 +135,10 @@ export default function GlobeView({ points = [], zones = {}, visibleZones = {}, 
 
         showGraticules={false}
 
-        // Prayer period zone overlays
-        polygonsData={polygons}
-        polygonGeoJsonGeometry={d => d.geometry}
-        polygonCapColor={d => `${PRAYER_COLORS[d.prayer]}18`}
-        polygonSideColor={() => 'rgba(0,0,0,0)'}
-        polygonStrokeColor={() => false}
-        polygonAltitude={0.001}
+        // Zone overlays via custom Three.js objects
+        customLayerData={[{ id: 'zones' }]}
+        customThreeObject={() => zoneObjects}
+        customThreeObjectUpdate={() => {}}
 
         // City dots
         pointsData={points}
