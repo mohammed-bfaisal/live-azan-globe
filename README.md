@@ -65,6 +65,7 @@ src/
 - [react-globe.gl](https://github.com/vasturiano/react-globe.gl) — WebGL globe
 - [three-globe](https://github.com/vasturiano/three-globe) — Earth textures
 - [flagcdn.com](https://flagcdn.com) — country flag icons
+- [Solar System Scope](https://www.solarsystemscope.com/textures/) — Earth day/night textures (CC BY 4.0)
 - PEW Research — Muslim population data for city selection
 
 ## 📝 License
