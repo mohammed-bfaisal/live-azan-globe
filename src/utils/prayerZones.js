@@ -1,6 +1,6 @@
 import { Coordinates, PrayerTimes, CalculationMethod } from 'adhan'
 
-const BAND_DEG = 2
+const BAND_DEG = 5
 
 function getPeriodForLon(lon, date) {
   const coords = new Coordinates(0, lon)

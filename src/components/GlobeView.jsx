@@ -74,10 +74,10 @@ export default function GlobeView({ points = [], zones = {}, visibleZones = {}, 
         // Prayer period zone overlays
         polygonsData={polygons}
         polygonGeoJsonGeometry={d => d.geometry}
-        polygonCapColor={d => `${PRAYER_COLORS[d.prayer]}30`}
-        polygonSideColor={() => 'transparent'}
-        polygonStrokeColor={() => 'transparent'}
-        polygonAltitude={0.005}
+        polygonCapColor={d => `${PRAYER_COLORS[d.prayer]}18`}
+        polygonSideColor={() => 'rgba(0,0,0,0)'}
+        polygonStrokeColor={() => false}
+        polygonAltitude={0.001}
 
         // City dots
         pointsData={points}
