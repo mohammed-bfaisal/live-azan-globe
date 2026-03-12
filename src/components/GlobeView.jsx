@@ -1,10 +1,11 @@
 import { useRef, useEffect, useState } from 'react'
 import Globe from 'react-globe.gl'
+import { PRAYER_COLORS } from '../hooks/usePrayerTimes'
 
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png'
 
-export default function GlobeView({ points = [], onCityHover, onCityClick }) {
+export default function GlobeView({ points = [], zones = {}, visibleZones = {}, onCityHover, onCityClick }) {
   const globeRef = useRef()
   const [isRotating, setIsRotating] = useState(true)
   const [dimensions, setDimensions] = useState({
@@ -31,10 +32,7 @@ export default function GlobeView({ points = [], onCityHover, onCityClick }) {
     globeRef.current.pointOfView({ lat: 20, lng: 40, altitude: 2.2 }, 0)
 
     const canvas = globeRef.current.renderer().domElement
-    const stop = () => {
-      controls.autoRotate = false
-      setIsRotating(false)
-    }
+    const stop = () => { controls.autoRotate = false; setIsRotating(false) }
     canvas.addEventListener('pointerdown', stop)
     canvas.addEventListener('wheel', stop)
     return () => {
@@ -49,6 +47,11 @@ export default function GlobeView({ points = [], onCityHover, onCityClick }) {
     globeRef.current.controls().autoRotate = newVal
     setIsRotating(newVal)
   }
+
+  // Flatten visible zone polygons into one array for globe
+  const polygons = Object.entries(zones).flatMap(([prayer, features]) =>
+    visibleZones[prayer] ? features.map(f => ({ ...f, prayer })) : []
+  )
 
   const activePoints = points.filter(p => p.active)
 
@@ -68,6 +71,15 @@ export default function GlobeView({ points = [], onCityHover, onCityClick }) {
 
         showGraticules={false}
 
+        // Prayer period zone overlays
+        polygonsData={polygons}
+        polygonGeoJsonGeometry={d => d.geometry}
+        polygonCapColor={d => `${PRAYER_COLORS[d.prayer]}30`}
+        polygonSideColor={() => 'transparent'}
+        polygonStrokeColor={() => 'transparent'}
+        polygonAltitude={0.005}
+
+        // City dots
         pointsData={points}
         pointLat={d => d.lat}
         pointLng={d => d.lon}
@@ -79,6 +91,7 @@ export default function GlobeView({ points = [], onCityHover, onCityClick }) {
         onPointHover={onCityHover}
         onPointClick={onCityClick}
 
+        // Azan pulse rings
         ringsData={activePoints}
         ringLat={d => d.lat}
         ringLng={d => d.lon}
@@ -94,9 +107,9 @@ export default function GlobeView({ points = [], onCityHover, onCityClick }) {
         onClick={toggleRotate}
         className="absolute bottom-8 right-8 z-30 flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-mono tracking-widest uppercase transition-all duration-200 border"
         style={{
-          background: isRotating ? 'rgba(168,216,255,0.1)' : 'rgba(255,255,255,0.04)',
+          background:  isRotating ? 'rgba(168,216,255,0.1)' : 'rgba(255,255,255,0.04)',
           borderColor: isRotating ? 'rgba(168,216,255,0.4)' : 'rgba(255,255,255,0.1)',
-          color: isRotating ? '#a8d8ff' : '#475569',
+          color:       isRotating ? '#a8d8ff' : '#475569',
         }}
       >
         <span>{isRotating ? '⏸' : '▶'}</span>

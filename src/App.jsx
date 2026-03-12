@@ -1,27 +1,31 @@
 import { useState, useCallback } from 'react'
 import './index.css'
-import GlobeView from './components/GlobeView'
-import Header from './components/Header'
-import Legend from './components/Legend'
-import CityTooltip from './components/CityTooltip'
+import GlobeView    from './components/GlobeView'
+import Header       from './components/Header'
+import Legend       from './components/Legend'
+import PrayerToggle from './components/PrayerToggle'
+import CityTooltip  from './components/CityTooltip'
 import { usePrayerTimes } from './hooks/usePrayerTimes'
 
+const ALL_PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
+const DEFAULT_VISIBLE = Object.fromEntries(ALL_PRAYERS.map(p => [p, true]))
+
 export default function App() {
-  const { cityData, counts } = usePrayerTimes()
+  const { cityData, counts, zones } = usePrayerTimes()
+  const [visibleZones, setVisibleZones] = useState(DEFAULT_VISIBLE)
   const [tooltip, setTooltip] = useState({ city: null, x: 0, y: 0 })
 
+  const handleToggle = (prayer) => {
+    setVisibleZones(prev => ({ ...prev, [prayer]: !prev[prayer] }))
+  }
+
   const handleCityHover = useCallback((city, _prev, event) => {
-    if (!city) {
-      setTooltip({ city: null, x: 0, y: 0 })
-      return
-    }
+    if (!city) { setTooltip({ city: null, x: 0, y: 0 }); return }
     setTooltip({ city, x: event?.clientX ?? 0, y: event?.clientY ?? 0 })
   }, [])
 
   const handleMouseMove = useCallback((e) => {
-    if (tooltip.city) {
-      setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }))
-    }
+    if (tooltip.city) setTooltip(prev => ({ ...prev, x: e.clientX, y: e.clientY }))
   }, [tooltip.city])
 
   return (
@@ -31,19 +35,19 @@ export default function App() {
     >
       <GlobeView
         points={cityData}
+        zones={zones}
+        visibleZones={visibleZones}
         onCityHover={handleCityHover}
         onCityClick={(city) => city && setTooltip(prev => ({ ...prev, city }))}
       />
       <Header />
+      <PrayerToggle visible={visibleZones} counts={counts} onToggle={handleToggle} />
       <Legend counts={counts} />
       <CityTooltip city={tooltip.city} x={tooltip.x} y={tooltip.y} />
 
-      {/* Subtle vignette */}
       <div
         className="absolute inset-0 pointer-events-none z-10"
-        style={{
-          background: 'radial-gradient(ellipse at center, transparent 50%, rgba(1,4,8,0.7) 100%)'
-        }}
+        style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(1,4,8,0.7) 100%)' }}
       />
     </div>
   )
