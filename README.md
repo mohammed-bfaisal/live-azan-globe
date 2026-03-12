@@ -70,4 +70,3 @@ src/
 ## 📝 License
 
 MIT — fork it, extend it, make it yours.
-# live-azan-globe
