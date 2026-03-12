@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Coordinates, PrayerTimes, CalculationMethod } from 'adhan'
 import { CITIES } from '../data/cities'
-import { buildPrayerZones } from '../utils/prayerZones'
+import { buildPrayerTexture } from '../utils/prayerZones'
 
 export const PRAYER_COLORS = {
   fajr:    '#a8d8ff',
@@ -28,14 +28,13 @@ export const PRAYER_ARABIC = {
   isha:    'العشاء',
 }
 
-const AZAN_WINDOW_MS = 20 * 60 * 1000 // 20 minutes
+const AZAN_WINDOW_MS = 20 * 60 * 1000
 
 function computeCity(city, date) {
   try {
     const coords = new Coordinates(city.lat, city.lon)
     const params = CalculationMethod.MuslimWorldLeague()
-    const times = new PrayerTimes(coords, date, params)
-
+    const times  = new PrayerTimes(coords, date, params)
     const prayerTimes = {
       fajr:    times.fajr,
       dhuhr:   times.dhuhr,
@@ -43,41 +42,26 @@ function computeCity(city, date) {
       maghrib: times.maghrib,
       isha:    times.isha,
     }
-
-    // Azan pulse: within 20 min of any prayer start
     const nowMs = date.getTime()
     let activePrayer = null
     for (const [name, t] of Object.entries(prayerTimes)) {
       const diff = nowMs - t.getTime()
       if (diff >= 0 && diff <= AZAN_WINDOW_MS) { activePrayer = name; break }
     }
-
-    // Prayer period: which salah window are we currently in
-    const ordered = ['fajr','dhuhr','asr','maghrib','isha'].map(n => ({ name: n, t: prayerTimes[n] }))
-    let period = null
-    for (let i = 0; i < ordered.length; i++) {
-      const start = ordered[i].t.getTime()
-      const end   = ordered[i+1] ? ordered[i+1].t.getTime() : Infinity
-      if (nowMs >= start && nowMs < end) { period = ordered[i].name; break }
-    }
-    if (!period && nowMs < ordered[0].t.getTime()) period = 'isha'
-
     const localTime = date.toLocaleTimeString('en-US', {
       timeZone: city.tz,
       hour: '2-digit', minute: '2-digit', hour12: true,
     })
-
     return {
       ...city,
-      prayer: activePrayer,                          // non-null only during azan window
-      period,                                        // current prayer period
-      color: activePrayer ? PRAYER_COLORS[activePrayer] : PRAYER_COLORS.none,
-      active: !!activePrayer,
+      prayer:   activePrayer,
+      color:    activePrayer ? PRAYER_COLORS[activePrayer] : PRAYER_COLORS.none,
+      active:   !!activePrayer,
       localTime,
-      times: prayerTimes,
+      times:    prayerTimes,
     }
   } catch {
-    return { ...city, prayer: null, period: null, color: PRAYER_COLORS.none, active: false, localTime: '--:--', times: null }
+    return { ...city, prayer: null, color: PRAYER_COLORS.none, active: false, localTime: '--:--', times: null }
   }
 }
 
@@ -87,27 +71,25 @@ function getCounts(cityData) {
   return counts
 }
 
-export function usePrayerTimes() {
-  const [cityData, setCityData]   = useState([])
-  const [counts,   setCounts]     = useState({})
-  const [zones,    setZones]      = useState({})
-  const [now,      setNow]        = useState(new Date())
+export function usePrayerTimes(visibleZones) {
+  const [cityData,      setCityData]      = useState([])
+  const [counts,        setCounts]        = useState({})
+  const [prayerTexture, setPrayerTexture] = useState(null)
   const intervalRef = useRef(null)
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     const date = new Date()
-    setNow(date)
     const data = CITIES.map(c => computeCity(c, date))
     setCityData(data)
     setCounts(getCounts(data))
-    setZones(buildPrayerZones(date))
-  }
+    setPrayerTexture(buildPrayerTexture(date, visibleZones))
+  }, [visibleZones])
 
   useEffect(() => {
     refresh()
     intervalRef.current = setInterval(refresh, 30_000)
     return () => clearInterval(intervalRef.current)
-  }, [])
+  }, [refresh])
 
-  return { cityData, counts, zones, now }
+  return { cityData, counts, prayerTexture }
 }

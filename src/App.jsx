@@ -7,12 +7,12 @@ import PrayerToggle from './components/PrayerToggle'
 import CityTooltip  from './components/CityTooltip'
 import { usePrayerTimes } from './hooks/usePrayerTimes'
 
-const ALL_PRAYERS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
+const ALL_PRAYERS     = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
 const DEFAULT_VISIBLE = Object.fromEntries(ALL_PRAYERS.map(p => [p, true]))
 
 export default function App() {
-  const { cityData, counts, zones } = usePrayerTimes()
   const [visibleZones, setVisibleZones] = useState(DEFAULT_VISIBLE)
+  const { cityData, counts, prayerTexture } = usePrayerTimes(visibleZones)
   const [tooltip, setTooltip] = useState({ city: null, x: 0, y: 0 })
 
   const handleToggle = (prayer) => {
@@ -35,8 +35,7 @@ export default function App() {
     >
       <GlobeView
         points={cityData}
-        zones={zones}
-        visibleZones={visibleZones}
+        prayerTexture={prayerTexture}
         onCityHover={handleCityHover}
         onCityClick={(city) => city && setTooltip(prev => ({ ...prev, city }))}
       />
@@ -44,7 +43,6 @@ export default function App() {
       <PrayerToggle visible={visibleZones} counts={counts} onToggle={handleToggle} />
       <Legend counts={counts} />
       <CityTooltip city={tooltip.city} x={tooltip.x} y={tooltip.y} />
-
       <div
         className="absolute inset-0 pointer-events-none z-10"
         style={{ background: 'radial-gradient(ellipse at center, transparent 50%, rgba(1,4,8,0.7) 100%)' }}
