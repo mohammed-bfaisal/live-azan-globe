@@ -28,7 +28,7 @@ export const PRAYER_ARABIC = {
   isha:    'العشاء',
 }
 
-const AZAN_WINDOW_MS = 20 * 60 * 1000
+const AZAN_WINDOW_MS = 5 * 60 * 1000  // ~Azan duration + iqama announcement
 
 function computeCity(city, date) {
   try {
