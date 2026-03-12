@@ -7,6 +7,9 @@ import PrayerToggle from './components/PrayerToggle'
 import CityTooltip  from './components/CityTooltip'
 import { usePrayerTimes } from './hooks/usePrayerTimes'
 
+// TODO: Prayer zone texture overlay — needs rework. Set to true when ready to fix.
+const ZONES_ENABLED = false
+
 const ALL_PRAYERS     = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
 const DEFAULT_VISIBLE = Object.fromEntries(ALL_PRAYERS.map(p => [p, true]))
 
@@ -35,7 +38,7 @@ export default function App() {
     >
       <GlobeView
         points={cityData}
-        prayerTexture={prayerTexture}
+        prayerTexture={ZONES_ENABLED ? prayerTexture : null}
         onCityHover={handleCityHover}
         onCityClick={(city) => city && setTooltip(prev => ({ ...prev, city }))}
       />
