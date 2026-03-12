@@ -3,7 +3,7 @@ import Globe from 'react-globe.gl'
 import { PRAYER_COLORS } from '../hooks/usePrayerTimes'
 
 const EARTH_TEXTURE = '/earth-day.jpg'
-const EARTH_BUMP    = '/earth-night.jpg'
+const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png'
 const COUNTRIES_URL = 'https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson'
 
 export default function GlobeView({ points = [], hoveredCity = null, onCityHover, onCityClick }) {
