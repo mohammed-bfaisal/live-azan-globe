@@ -58,6 +58,21 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
     }
   }, [])
 
+
+  // Boost renderer quality
+  useEffect(() => {
+    const renderer = globeRef.current.renderer()
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.shadowMap.enabled = true
+    const scene = globeRef.current.scene()
+    scene.traverse(obj => {
+      if (obj.isMesh && obj.material.map) {
+        obj.material.map.anisotropy = renderer.capabilities.getMaxAnisotropy()
+        obj.material.needsUpdate = true
+      }
+    })
+  }, [])
+
   const toggleRotate = () => {
     if (!globeRef.current) return
     const newVal = !isRotating
@@ -92,8 +107,8 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
         width={dimensions.width}
         height={dimensions.height}
 
-        globeImageUrl={null}
-        tilesUrl='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        globeImageUrl={EARTH_TEXTURE}
+        bumpImageUrl={EARTH_BUMP}
 
         showAtmosphere={true}
         atmosphereColor="#1a4a8a"
