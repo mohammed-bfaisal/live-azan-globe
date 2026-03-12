@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import Globe from 'react-globe.gl'
 import { PRAYER_COLORS } from '../hooks/usePrayerTimes'
 
-const EARTH_TEXTURE = '/earth-day.jpg'
+const EARTH_TEXTURE = null
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png'
 const COUNTRIES_URL = 'https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson'
 
@@ -92,8 +92,8 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
         width={dimensions.width}
         height={dimensions.height}
 
-        globeImageUrl={EARTH_TEXTURE}
-        bumpImageUrl={EARTH_BUMP}
+        globeImageUrl={null}
+        tilesUrl='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 
         showAtmosphere={true}
         atmosphereColor="#1a4a8a"
