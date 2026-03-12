@@ -21,7 +21,7 @@ export default function CityTooltip({ city, x, y }) {
     return () => clearInterval(id)
   }, [city])
 
-  if (!city) return null
+  if (!city || (x === 0 && y === 0)) return null
 
   const color    = PRAYER_COLORS[city.prayer] || PRAYER_COLORS.none
   const label    = PRAYER_LABELS[city.prayer]
