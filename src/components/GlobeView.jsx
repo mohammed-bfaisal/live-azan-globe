@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import Globe from 'react-globe.gl'
 import { PRAYER_COLORS } from '../hooks/usePrayerTimes'
 
-const EARTH_TEXTURE = null
+const EARTH_TEXTURE = '//unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png'
 const COUNTRIES_URL = 'https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson'
 
@@ -61,6 +61,7 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
 
   // Boost renderer quality
   useEffect(() => {
+    if (!globeRef.current) return
     const renderer = globeRef.current.renderer()
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.shadowMap.enabled = true
