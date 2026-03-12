@@ -37,8 +37,8 @@ export default function GlobeView({ points = [], hoveredCity = null, onCityHover
     controls.autoRotateSpeed = 0.5
     controls.enableDamping   = true
     controls.dampingFactor   = 0.1
-    controls.minDistance     = 150
-    controls.maxDistance     = 700
+    controls.minDistance     = 50
+    controls.maxDistance     = 2000
     globeRef.current.pointOfView({ lat: 20, lng: 40, altitude: 2.2 }, 0)
 
     const canvas = globeRef.current.renderer().domElement
