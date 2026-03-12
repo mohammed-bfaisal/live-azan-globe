@@ -1,19 +1,27 @@
-import { useRef, useEffect, useState, useMemo } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import Globe from 'react-globe.gl'
-import * as THREE from 'three'
 import { PRAYER_COLORS } from '../hooks/usePrayerTimes'
 
 const EARTH_TEXTURE = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
 const EARTH_BUMP    = 'https://unpkg.com/three-globe/example/img/earth-topology.png'
+const COUNTRIES_URL = 'https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson'
 
-export default function GlobeView({ points = [], prayerTexture = null, onCityHover, onCityClick }) {
-  const globeRef      = useRef()
-  const overlayRef    = useRef(null)
-  const [isRotating, setIsRotating] = useState(true)
-  const [dimensions, setDimensions] = useState({
+export default function GlobeView({ points = [], hoveredCity = null, onCityHover, onCityClick }) {
+  const globeRef     = useRef()
+  const [isRotating, setIsRotating]   = useState(true)
+  const [countries,  setCountries]    = useState([])
+  const [dimensions, setDimensions]   = useState({
     width:  window.innerWidth,
     height: window.innerHeight,
   })
+
+  // Load countries GeoJSON once
+  useEffect(() => {
+    fetch(COUNTRIES_URL)
+      .then(r => r.json())
+      .then(data => setCountries(data.features))
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     const onResize = () =>
@@ -43,44 +51,30 @@ export default function GlobeView({ points = [], prayerTexture = null, onCityHov
     }
   }, [])
 
-  // Inject prayer zone overlay sphere into the scene
-  useEffect(() => {
-    if (!globeRef.current || !prayerTexture) return
-
-    const scene = globeRef.current.scene()
-
-    // Remove previous overlay
-    if (overlayRef.current) {
-      scene.remove(overlayRef.current)
-      overlayRef.current.geometry.dispose()
-      overlayRef.current.material.map?.dispose()
-      overlayRef.current.material.dispose()
-    }
-
-    const loader   = new THREE.TextureLoader()
-    const texture  = loader.load(prayerTexture)
-    texture.colorSpace = THREE.SRGBColorSpace
-
-    const geometry = new THREE.SphereGeometry(101, 64, 64)
-    const material = new THREE.MeshBasicMaterial({
-      map:         texture,
-      transparent: true,
-      opacity:     1,
-      depthWrite:  false,
-      side:        THREE.FrontSide,
-    })
-
-    const mesh = new THREE.Mesh(geometry, material)
-    overlayRef.current = mesh
-    scene.add(mesh)
-  }, [prayerTexture])
-
   const toggleRotate = () => {
     if (!globeRef.current) return
     const newVal = !isRotating
     globeRef.current.controls().autoRotate = newVal
     setIsRotating(newVal)
   }
+
+  // Determine which country is hovered based on city ISO code
+  const hoveredISO   = hoveredCity?.country || null
+  const hoveredColor = hoveredCity ? PRAYER_COLORS[hoveredCity.prayer] || '#a8d8ff' : null
+
+  const getPolygonColor = useCallback((feat) => {
+    if (!hoveredISO) return 'rgba(0,0,0,0)'
+    const iso = feat.properties.ISO_A2
+    if (iso === hoveredISO) return hoveredColor + '55'
+    return 'rgba(0,0,0,0)'
+  }, [hoveredISO, hoveredColor])
+
+  const getStrokeColor = useCallback((feat) => {
+    if (!hoveredISO) return false
+    const iso = feat.properties.ISO_A2
+    if (iso === hoveredISO) return hoveredColor
+    return false
+  }, [hoveredISO, hoveredColor])
 
   const activePoints = points.filter(p => p.active)
 
@@ -99,6 +93,16 @@ export default function GlobeView({ points = [], prayerTexture = null, onCityHov
         atmosphereAltitude={0.18}
         showGraticules={false}
 
+        // Country highlight layer
+        polygonsData={countries}
+        polygonGeoJsonGeometry={d => d.geometry}
+        polygonCapColor={getPolygonColor}
+        polygonSideColor={() => 'rgba(0,0,0,0)'}
+        polygonStrokeColor={getStrokeColor}
+        polygonAltitude={0.006}
+        polygonsTransitionDuration={300}
+
+        // City dots
         pointsData={points}
         pointLat={d => d.lat}
         pointLng={d => d.lon}
@@ -110,10 +114,11 @@ export default function GlobeView({ points = [], prayerTexture = null, onCityHov
         onPointHover={onCityHover}
         onPointClick={onCityClick}
 
+        // Azan pulse rings
         ringsData={activePoints}
         ringLat={d => d.lat}
         ringLng={d => d.lon}
-        ringColor={d => t => d.color + Math.round((1 - t) * 255).toString(16).padStart(2, "0")}
+        ringColor={d => t => d.color + Math.round((1 - t) * 255).toString(16).padStart(2, '0')}
         ringMaxRadius={3.5}
         ringPropagationSpeed={1.5}
         ringRepeatPeriod={800}

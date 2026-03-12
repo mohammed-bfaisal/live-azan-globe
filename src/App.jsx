@@ -7,25 +7,27 @@ import PrayerToggle from './components/PrayerToggle'
 import CityTooltip  from './components/CityTooltip'
 import { usePrayerTimes } from './hooks/usePrayerTimes'
 
+const ALL_PRAYERS     = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
+const DEFAULT_VISIBLE = Object.fromEntries(ALL_PRAYERS.map(p => [p, true]))
+
 // TODO: Prayer zone texture overlay — needs rework. Set to true when ready to fix.
 const ZONES_ENABLED = false
 
 // TODO: Prayer zone toggle sidebar — re-enable when ZONES_ENABLED is true.
 const SIDEBAR_ENABLED = false
 
-const ALL_PRAYERS     = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
-const DEFAULT_VISIBLE = Object.fromEntries(ALL_PRAYERS.map(p => [p, true]))
-
 export default function App() {
   const [visibleZones, setVisibleZones] = useState(DEFAULT_VISIBLE)
   const { cityData, counts, prayerTexture } = usePrayerTimes(visibleZones)
-  const [tooltip, setTooltip] = useState({ city: null, x: 0, y: 0 })
+  const [tooltip,      setTooltip]      = useState({ city: null, x: 0, y: 0 })
+  const [hoveredCity,  setHoveredCity]  = useState(null)
 
   const handleToggle = (prayer) => {
     setVisibleZones(prev => ({ ...prev, [prayer]: !prev[prayer] }))
   }
 
   const handleCityHover = useCallback((city, _prev, event) => {
+    setHoveredCity(city || null)
     if (!city) { setTooltip({ city: null, x: 0, y: 0 }); return }
     setTooltip({ city, x: event?.clientX ?? 0, y: event?.clientY ?? 0 })
   }, [])
@@ -41,6 +43,7 @@ export default function App() {
     >
       <GlobeView
         points={cityData}
+        hoveredCity={hoveredCity}
         prayerTexture={ZONES_ENABLED ? prayerTexture : null}
         onCityHover={handleCityHover}
         onCityClick={(city) => city && setTooltip(prev => ({ ...prev, city }))}
